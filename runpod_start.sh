@@ -10,6 +10,6 @@ else
   echo "Warning: /runpod-volume/ComfyUI/custom_nodes not found!"
 fi
 
-# Execute the default Runpod handler
-echo "Starting Runpod handler..."
-exec python3 -u /rp_handler.py
+# Execute the original start script of the base image
+echo "Executing original start.sh..."
+exec /start.sh

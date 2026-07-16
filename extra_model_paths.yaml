@@ -1,0 +1,16 @@
+comfyui:
+  base_path: /runpod-volume/ComfyUI/models/
+  checkpoints: checkpoints/
+  unet: unet/
+  vae: vae/
+  loras: loras/
+  clip: text_encoders/
+  clip_vision: clip_vision/
+  style_models: style_models/
+  embeddings: embeddings/
+  controlnet: controlnet/
+  gligen: gligen/
+  upscale_models: upscale_models/
+  diffusion_models: diffusion_models/
+  latent_upscale_models: latent_upscale_models/
+  SEEDVR2: SEEDVR2/

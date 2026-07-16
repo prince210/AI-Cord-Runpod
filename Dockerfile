@@ -6,9 +6,9 @@ RUN cd /comfyui && git fetch --all && git reset --hard origin/master
 # Copy the extra model paths configuration
 COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 
-# Copy our custom startup script and make it executable
-COPY runpod_start.sh /start.sh
-RUN chmod +x /start.sh
+# Copy our custom startup wrapper script (do NOT overwrite the original /start.sh)
+COPY runpod_start.sh /runpod_start.sh
+RUN chmod +x /runpod_start.sh
 
-# Run the startup script on container boot
-CMD ["/start.sh"]
+# Run the startup wrapper script on container boot
+CMD ["/runpod_start.sh"]

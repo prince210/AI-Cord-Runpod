@@ -1,4 +1,4 @@
-FROM runpod/worker-comfyui:5.0.0-base
+FROM runpod/worker-comfyui:5.8.6-base
 
 # Force update ComfyUI to the latest version to support Krea-2 / Qwen3-VL
 RUN cd /comfyui && git fetch --all && git reset --hard origin/master

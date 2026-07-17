@@ -8,7 +8,7 @@ RUN /opt/venv/bin/pip install --upgrade pip && \
     /opt/venv/bin/pip install -r /comfyui/requirements.txt
 
 # Install python dependencies for custom nodes (decord, opencv, diffusers, etc.)
-RUN /opt/venv/bin/pip install gguf decord simpleeval numpy opencv-python-headless pillow torchaudio diffusers imageio-ffmpeg kornia rotary-embedding-torch
+RUN /opt/venv/bin/pip install gguf decord simpleeval numpy opencv-python-headless pillow torchaudio diffusers imageio-ffmpeg kornia==0.8.2 rotary-embedding-torch omegaconf
 
 # Copy the extra model paths configuration
 COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml

@@ -28,3 +28,4 @@ for p in ['/handler.py', '/rp_handler.py']:
 # Execute the original start script of the base image
 echo "Executing original start.sh..."
 exec /start.sh
+

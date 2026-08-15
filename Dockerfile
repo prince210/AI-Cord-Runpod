@@ -20,5 +20,8 @@ COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 COPY runpod_start.sh /runpod_start.sh
 RUN chmod +x /runpod_start.sh
 
+# Copy model downloader utility
+COPY downloader.py /downloader.py
+
 # Run the startup wrapper script on container boot
 CMD ["/runpod_start.sh"]

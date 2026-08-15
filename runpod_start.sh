@@ -25,7 +25,7 @@ for p in ['/handler.py', '/rp_handler.py']:
         # Inject on-demand downloader invocation
         content = re.sub(
             r'def handler\s*\(\s*job\s*\)\s*:',
-            'def handler(job):\n    try:\n        import sys\n        if \"/\" not in sys.path: sys.path.append(\"/\")\n        import downloader\n        downloader.download_missing_models(job.get(\"input\", {}).get(\"workflow\", {}))\n    except Exception as downloader_err:\n        print(\"On-demand downloader failed:\", downloader_err)\n',
+            'def handler(job):\n    try:\n        import sys\n        if \"/\" not in sys.path: sys.path.append(\"/\")\n        import downloader\n        downloader.download_missing_models(job.get(\"input\", {}).get(\"workflow\", {}))\n    except Exception as downloader_err:\n        print(\"On-demand downloader failed:\", downloader_err)\n        raise downloader_err\n',
             content
         )
         

@@ -107,18 +107,65 @@ MODEL_MAP: Dict[str, Tuple[str, str]] = {
     )
 }
 
+def download_file_python(url: str, dest_path: Path):
+    """Download a file using Python's built-in urllib with chunked writing."""
+    import urllib.request
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_dest = dest_path.with_suffix(".tmp")
+    
+    logger.info(f"Downloading {url} via Python urllib to {temp_dest}...")
+    try:
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req, timeout=300) as response, open(temp_dest, 'wb') as out_file:
+            meta = response.info()
+            total_size_str = meta.get("Content-Length")
+            total_size = int(total_size_str) if total_size_str else 0
+            
+            chunk_size = 1024 * 1024  # 1 MB
+            downloaded = 0
+            last_reported = 0
+            
+            while True:
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    break
+                out_file.write(chunk)
+                downloaded += len(chunk)
+                
+                # Log progress every 500MB to avoid log spamming
+                if downloaded - last_reported >= 500 * 1024 * 1024:
+                    percent_str = f" ({int(downloaded/total_size*100)}%)" if total_size else ""
+                    logger.info(f"Downloaded {downloaded // (1024*1024)} MB{percent_str}...")
+                    last_reported = downloaded
+                    
+        # Rename temp file to final destination
+        if temp_dest.exists():
+            if dest_path.exists():
+                dest_path.unlink()
+            temp_dest.rename(dest_path)
+        logger.info(f"Download complete: {dest_path}")
+    except Exception as e:
+        if temp_dest.exists():
+            try:
+                temp_dest.unlink()
+            except Exception:
+                pass
+        raise e
+
 def download_file(url: str, dest_path: Path):
-    """Download a file using aria2c with multi-connection acceleration, falling back to curl."""
+    """Download a file using aria2c with multi-connection acceleration, falling back to python urllib."""
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Use aria2c for accelerated downloading if available
     cmd = ["aria2c", "-x", "16", "-s", "16", "-o", dest_path.name, "-d", str(dest_path.parent), url]
     try:
         logger.info(f"Running download command: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
         return
     except Exception as e:
-        logger.warning(f"aria2c download failed or not found ({e}). Cleaning up and falling back to curl.")
+        logger.warning(f"aria2c download failed or not found ({e}). Cleaning up and falling back to Python urllib.")
         if dest_path.exists():
             try:
                 dest_path.unlink()
@@ -131,9 +178,7 @@ def download_file(url: str, dest_path: Path):
             except Exception:
                 pass
         
-    cmd_fallback = ["curl", "-L", "-C", "-", "-o", str(dest_path), url]
-    logger.info(f"Running fallback download command: {' '.join(cmd_fallback)}")
-    subprocess.run(cmd_fallback, check=True)
+    download_file_python(url, dest_path)
 
 def create_symlink_or_copy(src: Path, dst: Path):
     """Safely create a relative symlink to dst, or fallback to file copy."""

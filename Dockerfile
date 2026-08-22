@@ -1,5 +1,9 @@
 FROM runpod/worker-comfyui:5.8.6-base
 
+# Install system dependencies (curl and aria2 for dynamic downloading)
+USER root
+RUN apt-get update && apt-get install -y curl aria2 && rm -rf /var/lib/apt/lists/*
+
 # Force update ComfyUI to the latest version to support Krea-2 / Qwen3-VL
 RUN cd /comfyui && git fetch --all && git reset --hard origin/master
 

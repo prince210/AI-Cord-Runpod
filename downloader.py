@@ -159,7 +159,7 @@ def download_file(url: str, dest_path: Path):
     """Download a file using aria2c with multi-connection acceleration, falling back to python urllib."""
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     
-    cmd = ["aria2c", "-x", "16", "-s", "16", "-o", dest_path.name, "-d", str(dest_path.parent), url]
+    cmd = ["aria2c", "-x", "8", "-s", "8", "-o", dest_path.name, "-d", str(dest_path.parent), url]
     try:
         logger.info(f"Running download command: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
@@ -252,8 +252,28 @@ def check_and_download_model(model_filename: str):
     for alt in alt_folders:
         create_symlink_or_copy(dest_path, models_dir / alt / model_filename)
 
+def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=60):
+    """Wait for ComfyUI server to become reachable on the local port."""
+    import socket
+    import time
+    logger.info(f"Pre-flight check: Waiting for ComfyUI to become reachable on {host}:{port}...")
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=2):
+                logger.info("ComfyUI server is reachable and active!")
+                return True
+        except (socket.timeout, ConnectionRefusedError):
+            time.sleep(2)
+    logger.error(f"ComfyUI server was not reachable after {timeout} seconds on startup.")
+    return False
+
 def download_missing_models(workflow_prompt: Dict[str, Any]):
     """Scan the workflow prompt for inputs matching known model filenames, and download them."""
+    # Run pre-flight check to verify ComfyUI is running and healthy
+    if not wait_for_comfyui(timeout=60):
+        raise RuntimeError("ComfyUI server (127.0.0.1:8188) not reachable during pre-flight check.")
+
     logger.info("Scanning workflow payload for missing models...")
     found_models = set()
     

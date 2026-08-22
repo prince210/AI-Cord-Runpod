@@ -252,7 +252,7 @@ def check_and_download_model(model_filename: str):
     for alt in alt_folders:
         create_symlink_or_copy(dest_path, models_dir / alt / model_filename)
 
-def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=60):
+def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=300):
     """Wait for ComfyUI server to become reachable on the local port."""
     import socket
     import time
@@ -271,7 +271,7 @@ def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=60):
 def download_missing_models(workflow_prompt: Dict[str, Any]):
     """Scan the workflow prompt for inputs matching known model filenames, and download them."""
     # Run pre-flight check to verify ComfyUI is running and healthy
-    if not wait_for_comfyui(timeout=60):
+    if not wait_for_comfyui(timeout=300):
         raise RuntimeError("ComfyUI server (127.0.0.1:8188) not reachable during pre-flight check.")
 
     logger.info("Scanning workflow payload for missing models...")

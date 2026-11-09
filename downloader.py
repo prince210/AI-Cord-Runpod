@@ -350,19 +350,24 @@ def check_and_download_model(model_filename: str):
     for alt in alt_folders:
         create_symlink_or_copy(dest_path, models_dir / alt / model_filename)
 
-def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=300):
+def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=600):
     """Wait for ComfyUI server to become reachable on the local port."""
     import socket
     import time
-    logger.info(f"Pre-flight check: Waiting for ComfyUI to become reachable on {host}:{port}...")
+    logger.info(f"Pre-flight check: Waiting for ComfyUI to become reachable on {host}:{port} (timeout: {timeout}s)...")
     start_time = time.time()
+    last_log = start_time
     while time.time() - start_time < timeout:
         try:
             with socket.create_connection((host, port), timeout=2):
                 logger.info("ComfyUI server is reachable and active!")
                 return True
         except (socket.timeout, ConnectionRefusedError):
-            time.sleep(2)
+            time.sleep(3)
+            if time.time() - last_log >= 30:
+                elapsed = int(time.time() - start_time)
+                logger.info(f"Still waiting for ComfyUI / model download to finish ({elapsed}s / {timeout}s)...")
+                last_log = time.time()
     logger.error(f"ComfyUI server was not reachable after {timeout} seconds on startup.")
     return False
 

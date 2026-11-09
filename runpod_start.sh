@@ -75,6 +75,31 @@ fi
 
 echo "Target models directory on volume: $VOL_MODELS"
 
+# Helper function to download files with aria2c multi-threaded acceleration and progress logging
+download_file() {
+  local url="$1"
+  local dest_dir="$2"
+  local filename="$3"
+  local token="$4"
+
+  mkdir -p "$dest_dir"
+  if [ -f "$dest_dir/$filename" ]; then
+    echo "   [✓] Already exists: $filename"
+    return 0
+  fi
+
+  echo "   [→] Downloading $filename..."
+  local auth_header=""
+  [ -n "$token" ] && auth_header="--header=Authorization: Bearer $token"
+
+  if command -v aria2c &> /dev/null; then
+    aria2c $auth_header -x 16 -s 16 -k 1M -c --summary-interval=10 --console-log-level=warn \
+           -d "$dest_dir" -o "$filename" "$url"
+  else
+    curl -L -C - ${token:+-H "Authorization: Bearer $token"} --progress-bar -o "$dest_dir/$filename" "$url"
+  fi
+}
+
 # ==============================================================================
 # Model Auto-Provisioning Registry
 # Automatically provisions base models when worker boots if missing from volume.
@@ -83,21 +108,29 @@ LTX25_CHECK_FILE="$VOL_MODELS/diffusion_models/ltx-2.5-22b-distilled-transformer
 if [ ! -f "$LTX25_CHECK_FILE" ]; then
   TOKEN_VAL="${HF_TOKEN:-$HUGGING_FACE_HUB_TOKEN}"
   if [ -n "$TOKEN_VAL" ]; then
-    echo "=== Auto-downloading missing LTX-2.5 models to $VOL_MODELS using HF_TOKEN ==="
-    $PIP_CMD install -q -U "huggingface_hub[hf_transfer]" || true
-    export HF_HUB_ENABLE_HF_TRANSFER=1
+    echo "=== Auto-downloading missing LTX-2.5 models to $VOL_MODELS using aria2 (16 threads) ==="
     
-    HF_CLI="huggingface-cli"
-    [ -f "/opt/venv/bin/huggingface-cli" ] && HF_CLI="/opt/venv/bin/huggingface-cli"
-    
-    $HF_CLI download Lightricks/LTX-2.5 \
-      diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors \
-      text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors \
-      vae/ltx-2.5-video-vae-bf16.safetensors \
-      vae/ltx-2.5-audio-vae-bf16.safetensors \
-      latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors \
-      --local-dir "$VOL_MODELS" \
-      --token "$TOKEN_VAL" || echo "Warning: huggingface-cli download encountered an issue, proceeding..."
+    # 1. DiT Transformer (INT8-ConvRot: 21.8 GB)
+    download_file "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors" \
+                  "$VOL_MODELS/diffusion_models" "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors" "$TOKEN_VAL"
+                  
+    # 2. Text Encoder (Gemma 4 12B: 12.5 GB)
+    download_file "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors" \
+                  "$VOL_MODELS/text_encoders" "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors" "$TOKEN_VAL"
+                  
+    # 3. Video VAE (1.6 GB)
+    download_file "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/vae/ltx-2.5-video-vae-bf16.safetensors" \
+                  "$VOL_MODELS/vae" "ltx-2.5-video-vae-bf16.safetensors" "$TOKEN_VAL"
+                  
+    # 4. Audio VAE (0.8 GB)
+    download_file "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/vae/ltx-2.5-audio-vae-bf16.safetensors" \
+                  "$VOL_MODELS/vae" "ltx-2.5-audio-vae-bf16.safetensors" "$TOKEN_VAL"
+                  
+    # 5. Latent Spatial Upscaler x2 (1.1 GB)
+    download_file "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors" \
+                  "$VOL_MODELS/latent_upscale_models" "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors" "$TOKEN_VAL"
+                  
+    echo "=== All LTX-2.5 models downloaded successfully! ==="
   else
     echo "Notice: LTX-2.5 models not found on $VOL_MODELS and HF_TOKEN is not set."
     echo "Set HF_TOKEN in RunPod Endpoint Environment Variables to enable auto-download."

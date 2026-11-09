@@ -1,16 +1,53 @@
 comfyui:
-  base_path: /runpod-volume/ComfyUI/models/
+  base_path: /comfyui/models/
   checkpoints: checkpoints/
   unet: unet/
+  diffusion_models: diffusion_models/
   vae: vae/
   loras: loras/
-  clip: text_encoders/
+  clip: clip/
+  text_encoders: text_encoders/
   clip_vision: clip_vision/
   style_models: style_models/
   embeddings: embeddings/
   controlnet: controlnet/
   gligen: gligen/
   upscale_models: upscale_models/
+  latent_upscale_models: latent_upscale_models/
+  SEEDVR2: SEEDVR2/
+
+runpod_volume:
+  base_path: /runpod-volume/ComfyUI/models/
+  checkpoints: checkpoints/
+  unet: unet/
   diffusion_models: diffusion_models/
+  vae: vae/
+  loras: loras/
+  clip: clip/
+  text_encoders: text_encoders/
+  clip_vision: clip_vision/
+  style_models: style_models/
+  embeddings: embeddings/
+  controlnet: controlnet/
+  gligen: gligen/
+  upscale_models: upscale_models/
+  latent_upscale_models: latent_upscale_models/
+  SEEDVR2: SEEDVR2/
+
+workspace_volume:
+  base_path: /workspace/ComfyUI/models/
+  checkpoints: checkpoints/
+  unet: unet/
+  diffusion_models: diffusion_models/
+  vae: vae/
+  loras: loras/
+  clip: clip/
+  text_encoders: text_encoders/
+  clip_vision: clip_vision/
+  style_models: style_models/
+  embeddings: embeddings/
+  controlnet: controlnet/
+  gligen: gligen/
+  upscale_models: upscale_models/
   latent_upscale_models: latent_upscale_models/
   SEEDVR2: SEEDVR2/

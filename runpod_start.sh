@@ -1,18 +1,143 @@
 #!/bin/bash
 echo "=== Custom RunPod Startup Script ==="
 
-# Link Custom Nodes from Network Volume
-if [ -d /runpod-volume/ComfyUI/custom_nodes ]; then
-  echo "Linking custom nodes from Network Volume..."
-  rm -rf /comfyui/custom_nodes
-  ln -s /runpod-volume/ComfyUI/custom_nodes /comfyui/custom_nodes
-else
-  echo "Warning: /runpod-volume/ComfyUI/custom_nodes not found!"
+# Auto-detect Python virtualenv inside worker container
+PYTHON_CMD="python3"
+PIP_CMD="pip"
+if [ -f "/opt/venv/bin/python" ]; then
+  PYTHON_CMD="/opt/venv/bin/python"
+  PIP_CMD="/opt/venv/bin/pip"
 fi
 
-# Patch handler scripts to support 'gifs' and 'videos' output keys and on-demand model downloader
+# 1. Link Custom Nodes from Network Volume
+if [ -d /runpod-volume/ComfyUI/custom_nodes ]; then
+  echo "Linking custom nodes from /runpod-volume/ComfyUI/custom_nodes..."
+  rm -rf /comfyui/custom_nodes
+  ln -s /runpod-volume/ComfyUI/custom_nodes /comfyui/custom_nodes
+elif [ -d /workspace/ComfyUI/custom_nodes ]; then
+  echo "Linking custom nodes from /workspace/ComfyUI/custom_nodes..."
+  rm -rf /comfyui/custom_nodes
+  ln -s /workspace/ComfyUI/custom_nodes /comfyui/custom_nodes
+else
+  echo "Warning: Custom nodes directory not found on network volume!"
+fi
+
+# 2. Setup extra_model_paths.yaml and models directories on network volume
+echo "Setting up volume directory paths..."
+VOL_BASE=""
+if [ -d "/runpod-volume" ]; then
+  VOL_BASE="/runpod-volume"
+elif [ -d "/workspace" ]; then
+  VOL_BASE="/workspace"
+else
+  VOL_BASE="/comfyui"
+fi
+
+# Ensure all standard ComfyUI model subdirectories exist on persistent volume
+VOL_MODELS="$VOL_BASE/models"
+mkdir -p "$VOL_MODELS/diffusion_models" "$VOL_MODELS/unet" \
+         "$VOL_MODELS/text_encoders" "$VOL_MODELS/clip" \
+         "$VOL_MODELS/vae" "$VOL_MODELS/latent_upscale_models" \
+         "$VOL_MODELS/upscale_models" "$VOL_MODELS/checkpoints" \
+         "$VOL_MODELS/loras"
+
+# Mirror to ComfyUI/models for compatibility with any templates that look under ComfyUI/
+mkdir -p "$VOL_BASE/ComfyUI"
+if [ ! -e "$VOL_BASE/ComfyUI/models" ]; then
+  ln -sfn "$VOL_MODELS" "$VOL_BASE/ComfyUI/models" 2>/dev/null || true
+fi
+
+# Ensure extra_model_paths.yaml is present in /comfyui/
+if [ ! -f /comfyui/extra_model_paths.yaml ]; then
+  for p in /runpod-volume/extra_model_paths.yaml /workspace/extra_model_paths.yaml /extra_model_paths.yaml; do
+    if [ -f "$p" ]; then
+      cp "$p" /comfyui/extra_model_paths.yaml
+      break
+    fi
+  done
+  if [ ! -f /comfyui/extra_model_paths.yaml ]; then
+    curl -sSL https://raw.githubusercontent.com/prince210/AI-Cord-Runpod/main/extra_model_paths.yaml -o /comfyui/extra_model_paths.yaml 2>/dev/null || true
+  fi
+fi
+
+# Ensure downloader.py is present in / for on-demand worker downloads
+if [ ! -f /downloader.py ]; then
+  for p in /runpod-volume/downloader.py /workspace/downloader.py; do
+    if [ -f "$p" ]; then
+      cp "$p" /downloader.py
+      break
+    fi
+  done
+  if [ ! -f /downloader.py ]; then
+    curl -sSL https://raw.githubusercontent.com/prince210/AI-Cord-Runpod/main/downloader.py -o /downloader.py 2>/dev/null || true
+  fi
+fi
+
+echo "Target models directory on volume: $VOL_MODELS"
+
+# ==============================================================================
+# Model Auto-Provisioning Registry
+# Automatically provisions base models when worker boots if missing from volume.
+# ==============================================================================
+LTX25_CHECK_FILE="$VOL_MODELS/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"
+if [ ! -f "$LTX25_CHECK_FILE" ]; then
+  TOKEN_VAL="${HF_TOKEN:-$HUGGING_FACE_HUB_TOKEN}"
+  if [ -n "$TOKEN_VAL" ]; then
+    echo "=== Auto-downloading missing LTX-2.5 models to $VOL_MODELS using HF_TOKEN ==="
+    $PIP_CMD install -q -U "huggingface_hub[hf_transfer]" || true
+    export HF_HUB_ENABLE_HF_TRANSFER=1
+    
+    HF_CLI="huggingface-cli"
+    [ -f "/opt/venv/bin/huggingface-cli" ] && HF_CLI="/opt/venv/bin/huggingface-cli"
+    
+    $HF_CLI download Lightricks/LTX-2.5 \
+      diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors \
+      text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors \
+      vae/ltx-2.5-video-vae-bf16.safetensors \
+      vae/ltx-2.5-audio-vae-bf16.safetensors \
+      latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors \
+      --local-dir "$VOL_MODELS" \
+      --token "$TOKEN_VAL" || echo "Warning: huggingface-cli download encountered an issue, proceeding..."
+  else
+    echo "Notice: LTX-2.5 models not found on $VOL_MODELS and HF_TOKEN is not set."
+    echo "Set HF_TOKEN in RunPod Endpoint Environment Variables to enable auto-download."
+  fi
+fi
+
+echo "Linking models from $VOL_MODELS into /comfyui/models/..."
+mkdir -p /comfyui/models
+for sub in unet diffusion_models clip text_encoders vae latent_upscale_models upscale_models checkpoints loras; do
+  if [ -d "$VOL_MODELS/$sub" ]; then
+    mkdir -p "/comfyui/models/$sub"
+    for f in "$VOL_MODELS/$sub"/*; do
+      if [ -e "$f" ]; then
+        ln -sf "$f" "/comfyui/models/$sub/" 2>/dev/null || true
+      fi
+    done
+  fi
+done
+
+# Ensure unet <-> diffusion_models cross-compatibility
+mkdir -p /comfyui/models/unet /comfyui/models/diffusion_models
+for f in /comfyui/models/diffusion_models/*; do
+  [ -e "$f" ] && ln -sf "$f" /comfyui/models/unet/ 2>/dev/null || true
+done
+for f in /comfyui/models/unet/*; do
+  [ -e "$f" ] && ln -sf "$f" /comfyui/models/diffusion_models/ 2>/dev/null || true
+done
+
+# Ensure clip <-> text_encoders cross-compatibility
+mkdir -p /comfyui/models/clip /comfyui/models/text_encoders
+for f in /comfyui/models/text_encoders/*; do
+  [ -e "$f" ] && ln -sf "$f" /comfyui/models/clip/ 2>/dev/null || true
+done
+for f in /comfyui/models/clip/*; do
+  [ -e "$f" ] && ln -sf "$f" /comfyui/models/text_encoders/ 2>/dev/null || true
+done
+
+# 3. Patch handler scripts to support 'gifs' and 'videos' output keys and on-demand model downloader
 echo "Patching Runpod handler script for outputs and on-demand downloader..."
-python3 -c "
+$PYTHON_CMD -c "
 import re
 for p in ['/handler.py', '/rp_handler.py']:
     try:

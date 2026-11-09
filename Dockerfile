@@ -11,7 +11,7 @@ RUN cd /comfyui && git fetch --all && git reset --hard origin/master
 RUN /opt/venv/bin/pip install --upgrade pip && \
     /opt/venv/bin/pip install -r /comfyui/requirements.txt
 
-RUN /opt/venv/bin/pip install gguf decord simpleeval numpy opencv-python-headless pillow torchaudio diffusers imageio-ffmpeg kornia==0.8.2 rotary-embedding-torch omegaconf sentencepiece protobuf "huggingface-hub>=0.25.0,<1.0"
+RUN /opt/venv/bin/pip install gguf decord simpleeval numpy opencv-python-headless pillow torchaudio diffusers imageio-ffmpeg kornia==0.8.2 rotary-embedding-torch omegaconf sentencepiece protobuf "huggingface-hub[hf_transfer]>=0.25.0,<1.0"
 
 # Install NVIDIA VFX library for RTX Super Resolution support
 RUN /opt/venv/bin/pip install nvidia-vfx --index-url https://pypi.nvidia.com

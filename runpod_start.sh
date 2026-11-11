@@ -60,18 +60,14 @@ if [ ! -f /comfyui/extra_model_paths.yaml ]; then
   fi
 fi
 
-# Ensure downloader.py is present in / for on-demand worker downloads
-if [ ! -f /downloader.py ]; then
-  for p in /runpod-volume/downloader.py /workspace/downloader.py; do
-    if [ -f "$p" ]; then
-      cp "$p" /downloader.py
-      break
-    fi
-  done
-  if [ ! -f /downloader.py ]; then
-    curl -sSL https://raw.githubusercontent.com/prince210/AI-Cord-Runpod/main/downloader.py -o /downloader.py 2>/dev/null || true
+# Ensure the latest downloader.py is active (pull latest from GitHub or network volume)
+for p in /runpod-volume/downloader.py /workspace/downloader.py; do
+  if [ -f "$p" ]; then
+    cp "$p" /downloader.py
+    break
   fi
-fi
+done
+curl -sSL https://raw.githubusercontent.com/prince210/AI-Cord-Runpod/main/downloader.py -o /downloader.py 2>/dev/null || true
 
 echo "Target models directory on volume: $VOL_MODELS"
 
@@ -138,7 +134,7 @@ if [ ! -f "$LTX25_CHECK_FILE" ]; then
 fi
 
 MINIMAX_CHECK_FILE="$VOL_MODELS/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
-if [ ! -f "$MINIMAX_CHECK_FILE" ] && [ "${AUTO_DOWNLOAD_MINIMAX:-false}" = "true" -o -n "${DOWNLOAD_MINIMAX}" ]; then
+if [ ! -f "$MINIMAX_CHECK_FILE" ]; then
   TOKEN_VAL="${HF_TOKEN:-$HUGGING_FACE_HUB_TOKEN}"
   echo "=== Auto-downloading missing MiniMax H3 models to $VOL_MODELS using aria2 (16 threads) ==="
   

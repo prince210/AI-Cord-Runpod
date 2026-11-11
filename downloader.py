@@ -382,6 +382,25 @@ def check_and_download_model(model_filename: str):
     for alt in alt_folders:
         create_symlink_or_copy(dest_path, models_dir / alt / model_filename)
 
+    # Ensure files are also directly linked into /comfyui/models/ for live ComfyUI instance
+    comfy_models_dir = Path("/comfyui/models")
+    if comfy_models_dir.exists() and models_dir.resolve() != comfy_models_dir.resolve():
+        create_symlink_or_copy(dest_path, comfy_models_dir / subfolder / model_filename)
+        for alt in alt_folders:
+            create_symlink_or_copy(dest_path, comfy_models_dir / alt / model_filename)
+
+    # Notify ComfyUI folder_paths to invalidate caches and detect new files
+    try:
+        import sys
+        if "/comfyui" not in sys.path:
+            sys.path.append("/comfyui")
+        import folder_paths
+        folder_paths.get_filename_list(subfolder)
+        for alt in alt_folders:
+            folder_paths.get_filename_list(alt)
+    except Exception:
+        pass
+
 def wait_for_comfyui(host="127.0.0.1", port=8188, timeout=600):
     """Wait for ComfyUI server to become reachable on the local port."""
     import socket
@@ -432,3 +451,4 @@ def download_missing_models(workflow_prompt: Dict[str, Any]):
             check_and_download_model(model)
         except Exception as e:
             logger.error(f"Failed to download model {model}: {e}")
+            raise RuntimeError(f"Required model {model} could not be downloaded: {e}")

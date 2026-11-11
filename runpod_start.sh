@@ -137,6 +137,34 @@ if [ ! -f "$LTX25_CHECK_FILE" ]; then
   fi
 fi
 
+MINIMAX_CHECK_FILE="$VOL_MODELS/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+if [ ! -f "$MINIMAX_CHECK_FILE" ] && [ "${AUTO_DOWNLOAD_MINIMAX:-false}" = "true" -o -n "${DOWNLOAD_MINIMAX}" ]; then
+  TOKEN_VAL="${HF_TOKEN:-$HUGGING_FACE_HUB_TOKEN}"
+  echo "=== Auto-downloading missing MiniMax H3 models to $VOL_MODELS using aria2 (16 threads) ==="
+  
+  # 1. DiT Transformer (INT8-ConvRot: 19.53 GB)
+  download_file "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" \
+                "$VOL_MODELS/diffusion_models" "minimax_h3_fl2va_pruned_int8_convrot.safetensors" "$TOKEN_VAL"
+                
+  # 2. Text Encoder (Qwen3-VL 32B NVFP4/AWQ: 14.61 GB)
+  download_file "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" \
+                "$VOL_MODELS/text_encoders" "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" "$TOKEN_VAL"
+                
+  # 3. Video VAE (INT8-ConvRot: 2.62 GB)
+  download_file "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors" \
+                "$VOL_MODELS/vae" "minimax_h3_video_vae_int8_convrot.safetensors" "$TOKEN_VAL"
+                
+  # 4. Audio VAE (FP32: 577.2 MB)
+  download_file "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors" \
+                "$VOL_MODELS/vae" "minimax_h3_audio_vae_fp32.safetensors" "$TOKEN_VAL"
+                
+  # 5. Turbo 8-step LoRA (1.82 GB)
+  download_file "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors" \
+                "$VOL_MODELS/loras" "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors" "$TOKEN_VAL"
+                
+  echo "=== All MiniMax H3 models downloaded successfully! ==="
+fi
+
 echo "Linking models from $VOL_MODELS into /comfyui/models/..."
 mkdir -p /comfyui/models
 for sub in unet diffusion_models clip text_encoders vae latent_upscale_models upscale_models checkpoints loras; do

@@ -67,6 +67,38 @@ MODEL_MAP: Dict[str, Tuple[str, str, List[str]]] = {
         ["https://huggingface.co/PulpCut/LTX-2.5-INT8-ConvRot-safetensors/resolve/main/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"]
     ),
 
+    # --- MiniMax H3 (Omni-Modal Video + Audio & RTX 4090 / 5090 Optimized) ---
+    "minimax_h3_fl2va_pruned_int8_convrot.safetensors": (
+        "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "diffusion_models",
+        ["https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"]
+    ),
+    "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors": (
+        "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "text_encoders",
+        ["https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"]
+    ),
+    "minimax_h3_video_vae_int8_convrot.safetensors": (
+        "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+        "vae",
+        ["https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_video_vae_int8_convrot.safetensors"]
+    ),
+    "minimax_h3_audio_vae_fp32.safetensors": (
+        "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "vae",
+        ["https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_audio_vae_fp32.safetensors"]
+    ),
+    "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors": (
+        "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+        "loras",
+        ["https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"]
+    ),
+    "minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors": (
+        "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
+        "loras",
+        []
+    ),
+
     # --- Flux Klein ---
     "flux-2-klein-9b-Q5_K_M.gguf": (
         "https://huggingface.co/unsloth/FLUX.2-klein-9B-GGUF/resolve/main/flux-2-klein-9b-Q5_K_M.gguf",

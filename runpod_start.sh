@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "=== Custom RunPod Startup Script ==="
 
+# Optimize PyTorch memory allocation on 24GB GPUs to prevent fragmentation and budget deficits
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
 # Auto-detect Python virtualenv inside worker container
 PYTHON_CMD="python3"
 PIP_CMD="pip"

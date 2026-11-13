@@ -25,6 +25,21 @@ else
   echo "Warning: Custom nodes directory not found on network volume!"
 fi
 
+# Ensure ComfyUI_Nvidia_VFX_Nodes (RTXVideoSuperResolution) is present
+if [ -d /comfyui/custom_nodes ]; then
+  if [ ! -d "/comfyui/custom_nodes/ComfyUI_Nvidia_VFX_Nodes" ]; then
+    echo "Cloning ComfyUI_Nvidia_VFX_Nodes for RTX Video Super Resolution..."
+    git clone https://github.com/Comfy-Org/ComfyUI_Nvidia_VFX_Nodes.git /comfyui/custom_nodes/ComfyUI_Nvidia_VFX_Nodes 2>/dev/null || true
+  fi
+fi
+
+# Ensure nvidia-vfx dependency is installed in Python environment
+if ! $PYTHON_CMD -c "import nvvfx" 2>/dev/null; then
+  echo "Installing nvidia-vfx from NVIDIA PyPI..."
+  $PIP_CMD install -U --no-build-isolation nvidia-vfx --index-url https://pypi.nvidia.com 2>/dev/null || \
+  $PIP_CMD install nvidia-vfx --extra-index-url https://pypi.nvidia.com 2>/dev/null || true
+fi
+
 # 2. Setup extra_model_paths.yaml and models directories on network volume
 echo "Setting up volume directory paths..."
 VOL_BASE=""

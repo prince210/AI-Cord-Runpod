@@ -66,7 +66,7 @@ declare -A CUSTOM_NODES=(
     ["ComfyMath"]="https://github.com/evanspearman/ComfyMath.git"
     ["ComfyLiterals"]="https://github.com/M1kep/ComfyLiterals.git"
     ["ComfyUI-LTX2-MultiGPU"]="https://github.com/dreamfast/ComfyUI-LTX2-MultiGPU.git"
-    ["Nvidia_RTX_Nodes_ComfyUI"]="https://github.com/NVIDIA/Nvidia_RTX_Nodes_ComfyUI.git"
+    ["ComfyUI_Nvidia_VFX_Nodes"]="https://github.com/Comfy-Org/ComfyUI_Nvidia_VFX_Nodes.git"
 )
 
 for node in "${!CUSTOM_NODES[@]}"; do
@@ -83,6 +83,10 @@ done
 echo " -> Installing required Python packages..."
 pip install --upgrade pip
 pip install gguf decord simpleeval numpy opencv-python pillow torchaudio --hash-style=gnu || pip install gguf decord simpleeval numpy opencv-python pillow torchaudio
+
+# Install NVIDIA VFX library for RTX Video Super Resolution
+echo " -> Installing nvidia-vfx for RTX Video Super Resolution..."
+pip install -U --no-build-isolation nvidia-vfx --index-url https://pypi.nvidia.com || echo "Warning: Failed to install nvidia-vfx from NVIDIA PyPI"
 
 # Install custom node specific requirements
 for req in $(find . -maxdepth 2 -name "requirements.txt"); do
